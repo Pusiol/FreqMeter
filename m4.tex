@@ -1,0 +1,100 @@
+\documentclass[11pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath,amsthm,latexsym,amsbsy}
+\setlength{\textwidth}{6in}
+\setlength{\textheight}{8in}
+\setlength{\topmargin}{-0.25in}
+\setlength{\oddsidemargin}{0.25in}
+\newcommand{\h}{\hspace*{.24in}}
+\usepackage{listings}
+%\usepackage{xcolor}
+\usepackage[portuguese]{babel} 
+\usepackage[latin1]{inputenc}
+
+%\definecolor{verde}{rgb}{0,0.5,0}
+
+\lstset{language=C,
+	numbers=left,
+	numberstyle=\footnotesize,
+	frame=single,
+	showstringspaces=false
+% basicstyle=\ttfamily\small,
+%keywordstyle=\color{blue},
+%stringstyle=\color{verde},
+%commentstyle=\color{red},
+%extendedchars=true,
+%showspaces=false,
+%showstringspaces=false,
+%numbers=left,
+%numberstyle=\tiny,
+%breaklines=true,
+%backgroundcolor=\color{green!10},
+%breakautoindent=true
+}
+
+\parindent=0pt
+\parskip=2pt
+
+
+\begin{document}
+
+
+
+
+
+\section{Algoritmo para cálculo da frequência}
+
+\h Para encontrar a frequência do sinal de entrada, usamos como base o princípio da correlação. Ocorre que quando correlacionamos um sinal com ele mesmo, aparecem picos correspondentes a quando o sinal começa a se repetir. Sabendo a distância entre esses picos e de posse da frequência de amostragem podemos facilmente calcular a frequência do sinal.
+
+\h A função é mostrada abaixo. Na outra folha seu funcionamento é explicado. 
+
+
+
+
+\begin{lstlisting}
+//#include <stdio.h>
+
+#define mc 100
+#define bp 100
+
+
+float frq(int *vetorzao,int tamanho){
+int i,j,d,e,peak[bp][2],cpeak=0,maior=0;
+char sub=1;
+for(i=mc;i<tamanho-mc;i++){
+  e=d,d=0;
+  for(j=0;j<mc;j++)d+=vetorzao[i+j]*vetorzao[j];
+  if(sub && d<e){
+    sub=0;
+    if(d>maior*.75){
+      peak[cpeak][0]=d,peak[cpeak][1]=i,cpeak++;
+      if(maior<d)maior=d;
+    }
+  }
+    if(!sub && d>e)sub=1;
+}
+
+sub=1,j=0,maior=maior*.75;
+for(i=0;i<cpeak;i++)
+  if(peak[i][0]>maior)
+    if(sub)
+      d=peak[i][1],sub=0;
+    else 
+      e=peak[i][1],j++;
+
+//printf("%f\n",(float)(e-d)/j);
+
+return (float)(e-d)/j;
+}
+\end{lstlisting}
+
+\h Primeiro definimos dois parâmetros. mc é o tamanho da janela que será usada para fazer a correlação. Um valor grande permite medir frequências menores, porém afeta o desempenho. O outro é só o tamanho do buffer de picos. Deve ser escolhido um valor razoável.
+
+\h A função recebe como parâmetros um vetor e seu tamanho. Deverá ser feita uma adaptação caso não se esteja trabalhando com batelada. Na linha 10 começa o loop que vai varrer o vetorzão janela a janela. O loop da linha 12 calcula a correlação entre a janela atual e a do início do vetor. Caso seja um pico, seu valor é analizado e, se for um pico dos grandes, é guardado no buffer de picos.
+
+\h Na linha 24 o buffer de picos é tratado. Os picos pequenos que tenham passado inicialmente são descartados e os grandes são contados. Terminamos retornando a média das distâncias entre picos.
+
+\h A função é razoavelmente robusta, não sendo muito sensível a ruído ou harmônicos, devido à média feita no final e à própria natureza da correlação. Uma correlação muito mais alta em alguma das janelas, um outlier, poderia arruinar a medição, fazendo o algoritmo descartar picos verdadeiros, mas isso é um evento raro e, de qualquer forma, na batelada seguinte já teremos um novo valor, provavelmente correto. 
+
+
+\end{document}
